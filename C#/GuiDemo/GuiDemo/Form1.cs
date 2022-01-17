@@ -1,4 +1,4 @@
-//#define UsePolyTree
+#define UsePolyTree
 
 using System;
 using System.Diagnostics;
@@ -294,7 +294,14 @@ namespace WindowsFormsApplication1
         Convert.ToInt64((rand.Next(r / Q) * Q + l + 10) * scale),
         Convert.ToInt64((rand.Next(b / Q) * Q + t + 10) * scale));
     }
-    //---------------------------------------------------------------------
+
+    private IntPoint GeneratePointOnScreen(int l, int t, int r, int b, double x, double y, double xOffset, double yOffset)
+    {
+        return new IntPoint(
+          Convert.ToInt64((x+ xOffset) * scale),
+          Convert.ToInt64((y + yOffset) * scale));
+    }
+        //---------------------------------------------------------------------
 
     private void GenerateRandomPolygon(int count)
     {
@@ -308,15 +315,59 @@ namespace WindowsFormsApplication1
       subjects.Clear();
       clips.Clear();
 
-      Polygon subj = new Polygon(count);
-      for (int i = 0; i < count; ++i)
-        subj.Add(GenerateRandomPoint(l, t, r, b, rand));
-      subjects.Add(subj);
+      Boolean test = false;
+      if (test)
+      {
+           Polygon subj = new Polygon(count);
+           for (int i = 0; i < count; ++i)
+               subj.Add(GenerateRandomPoint(l, t, r, b, rand));
+           subjects.Add(subj);
 
-      Polygon clip = new Polygon(count);
-      for (int i = 0; i < count; ++i)
-        clip.Add(GenerateRandomPoint(l, t, r, b, rand));
-      clips.Add(clip);
+           Polygon clip = new Polygon(count);
+           for (int i = 0; i < count; ++i)
+               clip.Add(GenerateRandomPoint(l, t, r, b, rand));
+           clips.Add(clip);
+      }
+      else
+      {
+          double xOffset = 100;
+          double yOffset = -600.0;
+
+          Polygon subj = new Polygon(5);
+          //subj.Add(GeneratePointOnScreen(l, t, r, b, 2, 911.2, xOffset, yOffset));
+          //subj.Add(GeneratePointOnScreen(l, t, r, b, 351.2, 911.2, xOffset, yOffset));
+          //subj.Add(GeneratePointOnScreen(l, t, r, b, 351.2, 688.2, xOffset, yOffset));
+          //subj.Add(GeneratePointOnScreen(l, t, r, b, 887.79, 688.2, xOffset, yOffset));
+          //subj.Add(GeneratePointOnScreen(l, t, r, b, 887.79, 1218.2, xOffset, yOffset));
+
+          if (rbTest2.Checked)
+          {
+              subj.Add(GeneratePointOnScreen(l, t, r, b, -10, 930, xOffset, yOffset));
+              // NOTE: if 930 is replaced with 930.01, the problem “disappear”
+              //subj.Add(GeneratePointOnScreen(l, t, r, b, 360, 930.01, xOffset, yOffset));
+              subj.Add(GeneratePointOnScreen(l, t, r, b, 360, 930, xOffset, yOffset));
+              subj.Add(GeneratePointOnScreen(l, t, r, b, 360, 690, xOffset, yOffset));
+              subj.Add(GeneratePointOnScreen(l, t, r, b, 880, 690, xOffset, yOffset));
+              subj.Add(GeneratePointOnScreen(l, t, r, b, 880, 1300, xOffset, yOffset));
+          }
+          else
+          {
+              subj.Add(GeneratePointOnScreen(l, t, r, b, -10, 930, xOffset, yOffset));
+              subj.Add(GeneratePointOnScreen(l, t, r, b, 920, 930, xOffset, yOffset));
+          }
+
+          subjects.Add(subj);
+
+          Polygon clip = new Polygon(7);
+          clip.Add(GeneratePointOnScreen(l, t, r, b, 889, 1215, xOffset, yOffset));
+          clip.Add(GeneratePointOnScreen(l, t, r, b, 5  , 1215, xOffset, yOffset));
+          clip.Add(GeneratePointOnScreen(l, t, r, b, 5  , 910 , xOffset, yOffset));
+          clip.Add(GeneratePointOnScreen(l, t, r, b, 350, 910 , xOffset, yOffset));
+          clip.Add(GeneratePointOnScreen(l, t, r, b, 350, 687 , xOffset, yOffset));
+          clip.Add(GeneratePointOnScreen(l, t, r, b, 889, 687 , xOffset, yOffset));
+          clip.Add(GeneratePointOnScreen(l, t, r, b, 889, 1215, xOffset, yOffset));
+          clips.Add(clip);
+      }
     }
     //---------------------------------------------------------------------
 
@@ -406,9 +457,9 @@ namespace WindowsFormsApplication1
       {
         if (!justClip)
         {
-          if (rbTest2.Checked)
-            GenerateAustPlusRandomEllipses((int)nudCount.Value);
-          else
+          //if (rbTest2.Checked)
+          //  GenerateAustPlusRandomEllipses((int)nudCount.Value);
+          //else
             GenerateRandomPolygon((int)nudCount.Value);
         }
         using (Graphics newgraphic = Graphics.FromImage(mybitmap))
@@ -423,14 +474,14 @@ namespace WindowsFormsApplication1
           foreach (Polygon pg in subjects)
           {
             PointF[] pts = PolygonToPointFArray(pg, scale);
-            path.AddPolygon(pts);
+            path.AddLines(pts);
             pts = null;
           }
           using (Pen myPen = new Pen(Color.FromArgb(196, 0xC3, 0xC9, 0xCF), (float)0.6))
           using (SolidBrush myBrush = new SolidBrush(Color.FromArgb(127, 0xDD, 0xDD, 0xF0)))
           {
-            newgraphic.FillPath(myBrush, path);
-            newgraphic.DrawPath(myPen, path);
+            //newgraphic.FillPath(myBrush, path);
+            //newgraphic.DrawPath(myPen, path);
             path.Reset();
 
             //draw clips ...
@@ -452,18 +503,23 @@ namespace WindowsFormsApplication1
             {
               Polygons solution2 = new Polygons();
               Clipper c = new Clipper();
-              c.AddPaths(subjects, PolyType.ptSubject, true);
+              c.AddPaths(subjects, PolyType.ptSubject, false);
               c.AddPaths(clips, PolyType.ptClip, true);
               solution.Clear();
 #if UsePolyTree
               bool succeeded = c.Execute(GetClipType(), solutionTree, GetPolyFillType(), GetPolyFillType());
               //nb: we aren't doing anything useful here with solutionTree except to show
               //that it works. Convert PolyTree back to Polygons structure ...
-              Clipper.PolyTreeToPolygons(solutionTree, solution);
+              //Clipper.PolyTreeToPolygons(solutionTree, solution);
+              for(int i = 0; i < solutionTree.ChildCount; ++i)
+              {
+                  Polygon p = solutionTree.Childs[i].Contour;
+                  solution.Add(p);
+              }
 #else
               bool succeeded = c.Execute(GetClipType(), solution, GetPolyFillType(), GetPolyFillType());
 #endif
-              if (succeeded)
+                            if (succeeded)
               {
                 //SaveToFile("solution", solution);
                 myBrush.Color = Color.Black;
@@ -488,16 +544,19 @@ namespace WindowsFormsApplication1
 
                 foreach (Polygon pg in solution2)
                 {
+                    path.Reset();
+
                   PointF[] pts = PolygonToPointFArray(pg, scale);
-                  if (pts.Count() > 2)
-                    path.AddPolygon(pts);
+                  if (pts.Count() >= 1)
+                    path.AddLines(pts);
                   pts = null;
+                                    
+                    myBrush.Color = Color.FromArgb(127, 0x66, 0xEF, 0x7F);
+                    myPen.Color = Color.FromArgb(255, 0, 0x33, 0);
+                    myPen.Width = 1.0f;
+                    //newgraphic.FillPath(myBrush, path);
+                    newgraphic.DrawPath(myPen, path);
                 }
-                myBrush.Color = Color.FromArgb(127, 0x66, 0xEF, 0x7F);
-                myPen.Color = Color.FromArgb(255, 0, 0x33, 0);
-                myPen.Width = 1.0f;
-                newgraphic.FillPath(myBrush, path);
-                newgraphic.DrawPath(myPen, path);
 
                 //now do some fancy testing ...
                 using (Font f = new Font("Arial", 8))
